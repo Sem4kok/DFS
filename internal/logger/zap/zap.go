@@ -1,6 +1,7 @@
 package zap
 
 import (
+	"github.com/Sem4kok/DFS/internal/logger"
 	"go.uber.org/zap"
 )
 
@@ -33,4 +34,8 @@ func (z *ZapLogger) Warn(args ...interface{}) {
 
 func (z *ZapLogger) Error(args ...interface{}) {
 	z.Info(args)
+}
+
+func (z *ZapLogger) With(args ...interface{}) logger.Logger {
+	return &ZapLogger{z.SugaredLogger.With(args...)}
 }
