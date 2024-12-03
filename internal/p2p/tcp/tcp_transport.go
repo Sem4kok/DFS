@@ -22,9 +22,10 @@ type TCPTransport struct {
 }
 
 // NewTCPTransport returns TCPTransport structure
-func NewTCPTransport(addr string) *TCPTransport {
+func NewTCPTransport(addr string, lg logger.Logger) *TCPTransport {
 	return &TCPTransport{
 		addr:      addr,
+		lg:        lg,
 		mu:        &sync.Mutex{},
 		peersLock: &sync.RWMutex{},
 		peers:     make(map[net.Addr]p2p.Peer),
