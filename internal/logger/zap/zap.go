@@ -36,6 +36,10 @@ func (z *ZapLogger) Error(args ...interface{}) {
 	z.Info(args)
 }
 
+func (z *ZapLogger) Fatal(args ...interface{}) {
+	z.Fatal(args)
+}
+
 func (z *ZapLogger) With(args ...interface{}) logger.Logger {
 	return &ZapLogger{z.SugaredLogger.With(args...)}
 }
