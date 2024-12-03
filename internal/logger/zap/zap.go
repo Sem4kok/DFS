@@ -33,7 +33,7 @@ func (z *ZapLogger) Warn(args ...interface{}) {
 }
 
 func (z *ZapLogger) Error(args ...interface{}) {
-	z.Info(args)
+	z.Error(args)
 }
 
 func (z *ZapLogger) Fatal(args ...interface{}) {
