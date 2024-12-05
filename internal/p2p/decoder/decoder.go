@@ -1,13 +1,16 @@
 package decoder
 
-import "io"
+import (
+	"github.com/Sem4kok/DFS/internal/p2p/message"
+	"io"
+)
 
 type Message struct {
 	Payload []byte
 }
 
 type Decoder interface {
-	Decode(r io.Reader, msg *Message) error
+	Decode(r io.Reader, rpc *message.RPC) error
 }
 
 type NopDecoder struct{}
