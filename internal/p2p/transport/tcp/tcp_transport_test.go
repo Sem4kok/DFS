@@ -1,15 +1,21 @@
-package p2p
+package transport
 
 import (
+	"github.com/Sem4kok/DFS/internal/logger"
+	"github.com/Sem4kok/DFS/internal/p2p/handshake"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestTCPTransport(t *testing.T) {
-	addr := ":8981"
+	opts := &TCPTransportOpts{
+		Addr:          ":8981",
+		Lg:            &logger.NOPLogger{},
+		HandshakeFunc: handshake.NOPHandshakeFunc,
+	}
 
-	tr := NewTCPTransport(addr, nil)
-	assert.Equal(t, tr.addr, addr)
+	tr := NewTCPTransport(opts)
+	assert.Equal(t, tr.Addr, opts.Addr)
 
 	assert.Nil(t, tr.ListenAndAccept())
 	assert.Equal(t, tr.isRunning, true)
