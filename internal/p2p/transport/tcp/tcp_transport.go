@@ -5,7 +5,7 @@ import (
 	"github.com/Sem4kok/DFS/internal/logger"
 	"github.com/Sem4kok/DFS/internal/p2p/decoder"
 	"github.com/Sem4kok/DFS/internal/p2p/handshake"
-	"github.com/Sem4kok/DFS/internal/p2p/transport"
+	"github.com/Sem4kok/DFS/internal/p2p/message"
 	"io"
 	"net"
 	"sync"
@@ -19,6 +19,10 @@ type TCPPeer struct {
 	outbound bool
 }
 
+func (p *TCPPeer) Close() error {
+	return p.conn.Close()
+}
+
 type TCPTransportOpts struct {
 	Addr          string
 	Lg            logger.Logger
@@ -28,14 +32,16 @@ type TCPTransportOpts struct {
 
 type TCPTransport struct {
 	*TCPTransportOpts
+	rpcch chan message.RPC
 
 	mu       *sync.Mutex
 	listener net.Listener
 
-	peersLock *sync.RWMutex
-	peers     map[net.Addr]transport.Peer
-
 	isRunning bool
+}
+
+func (t *TCPTransport) Consume() <-chan message.RPC {
+	return t.rpcch
 }
 
 // NewTCPTransport returns TCPTransport structure
@@ -43,8 +49,7 @@ func NewTCPTransport(opts *TCPTransportOpts) *TCPTransport {
 	return &TCPTransport{
 		TCPTransportOpts: opts,
 		mu:               &sync.Mutex{},
-		peersLock:        &sync.RWMutex{},
-		peers:            make(map[net.Addr]transport.Peer),
+		rpcch:            make(chan message.RPC),
 		isRunning:        false,
 	}
 }
@@ -90,15 +95,15 @@ func (t *TCPTransport) handleRequest(conn net.Conn) {
 	t.Lg.Info(fmt.Sprintf("requst handled: %+v", peer))
 
 	if err := t.HandshakeFunc(conn); err != nil {
-		conn.Close()
+		peer.Close()
 		t.Lg.Error(fmt.Sprintf("handshake error: %v", err))
 		return
 	}
 
-	msg := &decoder.Message{}
+	rpc := message.RPC{}
 	var errorCounter int
 	for {
-		err := t.Decoder.Decode(conn, msg)
+		err := t.Decoder.Decode(conn, &rpc)
 		switch err {
 		case nil:
 		case io.EOF:
@@ -108,7 +113,7 @@ func (t *TCPTransport) handleRequest(conn net.Conn) {
 			return
 		}
 
-		t.Lg.Info(fmt.Sprintf("message: %+v", msg))
+		t.rpcch <- rpc
 	}
 
 }
