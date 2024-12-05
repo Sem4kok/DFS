@@ -3,6 +3,7 @@ package transport
 import (
 	"fmt"
 	"github.com/Sem4kok/DFS/internal/logger"
+	"github.com/Sem4kok/DFS/internal/p2p/decoder"
 	"github.com/Sem4kok/DFS/internal/p2p/handshake"
 	"github.com/Sem4kok/DFS/internal/p2p/transport"
 	"net"
@@ -21,6 +22,7 @@ type TCPTransportOpts struct {
 	Addr          string
 	Lg            logger.Logger
 	HandshakeFunc handshake.HandshakeFunc
+	Decoder       decoder.Decoder
 }
 
 type TCPTransport struct {
@@ -87,10 +89,24 @@ func (t *TCPTransport) startAcceptLoop() {
 
 func (t *TCPTransport) handleRequest(conn net.Conn) {
 	peer := TCPPeer{conn: conn, outbound: true}
+	t.Lg.Info(fmt.Sprintf("requst handled: %+v", peer))
 
 	// todo parse payload
+	// todo decoder
+	msg := decoder.Message{}
+	var errorCounter int
+	for {
+		err := t.Decoder.Decode(conn, &msg)
+		if err != nil {
+			errorCounter++
+			if errorCounter > 5 {
+				break
+			}
+		}
 
-	t.Lg.Info(fmt.Sprintf("requst handled: %+v", peer))
+		t.Lg.Info(fmt.Sprintf("message: %+v", msg))
+	}
+
 }
 
 // Shutdown closes TCPTransport
