@@ -1,4 +1,4 @@
-package p2p
+package transport
 
 // Peer is an interface that represents remote node
 type Peer interface {
