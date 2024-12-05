@@ -6,6 +6,7 @@ import (
 	"github.com/Sem4kok/DFS/internal/p2p/decoder"
 	"github.com/Sem4kok/DFS/internal/p2p/handshake"
 	"github.com/Sem4kok/DFS/internal/p2p/transport"
+	"io"
 	"net"
 	"sync"
 )
@@ -69,6 +70,7 @@ func (t *TCPTransport) ListenAndAccept() error {
 // when received then process
 func (t *TCPTransport) startAcceptLoop() {
 	const op = "TCP: startAcceptLoop:"
+	t.Lg.Info("TCPTransport starting accept loop...")
 	for {
 		if !t.isRunning {
 			return
@@ -79,10 +81,6 @@ func (t *TCPTransport) startAcceptLoop() {
 			t.Lg.Error(op, err)
 		}
 
-		if err := t.HandshakeFunc(conn); err != nil {
-			return
-		}
-
 		go t.handleRequest(conn)
 	}
 }
@@ -91,17 +89,23 @@ func (t *TCPTransport) handleRequest(conn net.Conn) {
 	peer := TCPPeer{conn: conn, outbound: true}
 	t.Lg.Info(fmt.Sprintf("requst handled: %+v", peer))
 
-	// todo parse payload
-	// todo decoder
-	msg := decoder.Message{}
+	if err := t.HandshakeFunc(conn); err != nil {
+		conn.Close()
+		t.Lg.Error(fmt.Sprintf("handshake error: %v", err))
+		return
+	}
+
+	msg := &decoder.Message{}
 	var errorCounter int
 	for {
-		err := t.Decoder.Decode(conn, &msg)
-		if err != nil {
+		err := t.Decoder.Decode(conn, msg)
+		switch err {
+		case nil:
+		case io.EOF:
+			fallthrough
+		default:
 			errorCounter++
-			if errorCounter > 5 {
-				break
-			}
+			return
 		}
 
 		t.Lg.Info(fmt.Sprintf("message: %+v", msg))
